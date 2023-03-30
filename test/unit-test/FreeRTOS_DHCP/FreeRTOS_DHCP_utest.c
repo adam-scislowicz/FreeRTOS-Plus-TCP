@@ -140,7 +140,7 @@ static int32_t FreeRTOS_recvfrom_Generic( Socket_t xSocket,
                                           socklen_t * pxSourceAddressLength,
                                           int callbacks )
 {
-    if( xFlags == FREERTOS_ZERO_COPY )
+    if(( xFlags & FREERTOS_ZERO_COPY) == FREERTOS_ZERO_COPY )
     {
         *( ( uint8_t ** ) pvBuffer ) = ucGenericPtr;
     }
@@ -2048,6 +2048,7 @@ void test_vDHCPProcess_eWaitingOfferCorrectDHCPMessageGetACKNoTimeout( void )
     memcpy( pxDHCPMessage->ucClientHardwareAddress, ipLOCAL_MAC_ADDRESS, sizeof( MACAddress_t ) );
     /* Add the expected cookie. */
     pxDHCPMessage->ulDHCPCookie = dhcpCOOKIE;
+    pxDHCPMessage->ucOpcode = dhcpREPLY_OPCODE;
 
     /* Leave one byte for the padding. */
     uint8_t * DHCPOption = &DHCPMsg[ sizeof( struct xDHCPMessage_IPv4 ) + 1 ];
@@ -2083,13 +2084,11 @@ void test_vDHCPProcess_eWaitingOfferCorrectDHCPMessageGetACKNoTimeout( void )
     /* Get a stub. */
     FreeRTOS_recvfrom_Stub( FreeRTOS_recvfrom_Generic );
 
-    FreeRTOS_ReleaseUDPPayloadBuffer_Expect( DHCPMsg );
-
     /* Make sure that there is no timeout. The expression is: xTaskGetTickCount() - pxEndPoint->xDHCPData.xDHCPTxTime ) > pxEndPoint->xDHCPData.xDHCPTxPeriod  */
     /* Return a value which makes the difference just equal to the period. */
     /*xTaskGetTickCount_ExpectAndReturn( pxEndPoint->xDHCPData.xDHCPTxTime + pxEndPoint->xDHCPData.xDHCPTxPeriod ); */
 
-    vDHCPProcessEndPoint( pdFALSE, pdTRUE, pxEndPoint );
+    vDHCPProcess( pdFALSE, pxEndPoint );
 
     /* DHCP socket should be allocated */
     TEST_ASSERT_EQUAL( &xTestSocket, xDHCPv4Socket );
